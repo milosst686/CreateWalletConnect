@@ -10,6 +10,8 @@ const web3Modal = new Web3Modal({
 
 function App() {
   const [signClient, setSignClient] = useState();
+  const [sessions, setSessions] = useState([]);
+  const [accounts, setAccounts] = useState([]);
 
   async function createClient(){
     try {
@@ -26,7 +28,9 @@ function App() {
   async function handleConnect(){
     if(!signClient) throw Error("Cannot connect. Sign Client is not created");
     try {
-      const proposalNamespace={
+
+      // dapp is going to send a proposal namespace
+           const proposalNamespace={
         eip155:{
           chains: ["eip155:5"],
           methods: ["eth_sendTransaction"],
@@ -34,16 +38,32 @@ function App() {
         }
       };
 
-      const {uri} = await signClient.connect({
+      const {uri, approval} = await signClient.connect({
         requiredNamespaces: proposalNamespace
       });
 
+      //Opening popup for scaning wallet
       if(uri){
         web3Modal.openModal({uri});
+        const sessionNamespace= await approval();
+        onSessionConnect(sessionNamespace);
+        web3Modal.closeModal();
       }
 
     } catch (e) {
       console.log(e);
+    }
+  }
+
+  async function onSessionConnect(session){
+    if(!session) throw Error("Session doesn't exist");
+    try {
+      setSessions(session);
+      setAccounts(session.namespaces.eip155.accounts[0].slice(9));
+      
+    } catch (e) {
+      console.log(e);
+      
     }
   }
 
@@ -56,7 +76,7 @@ function App() {
   return (
     <div className="App">
      <h1>Wallet Connect</h1>
-     <button onClick={handleConnect} disabled={!signClient}>Connect</button>
+   {accounts.length ? (<p>{accounts}</p>): (<button onClick={handleConnect} disabled={!signClient}>Connect</button>)}
     </div>
   );
 }
