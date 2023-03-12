@@ -20,6 +20,7 @@ function App() {
       })
       console.log('client', client);
       setSignClient(client);
+      await subscribeToEvents(client);
     } catch (e) {
       console.log(e);
     }
@@ -67,6 +68,38 @@ function App() {
     }
   }
 
+  async function handleDisconnect(){
+    try {
+      await signClient.disconnect({
+        topic: sessions.topic,
+        code: 6000,
+        message: "User disconnected"
+      });
+      reset();
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async function subscribeToEvents(client){
+    if(!client) throw Error("No events to subscribe to b/c the client does not ecist");
+
+    try {
+      client.on("session_delete",() =>{
+        console.log("User disconnected the session from their wallet");
+        reset();
+      })
+      
+    } catch (e) {
+     console.log(e);
+    }
+  }
+
+  const reset = ()=>{
+    setAccounts([]);
+    setSessions([]);
+  }
+
   useEffect(()=> {
     if(!signClient){
       createClient();
@@ -76,7 +109,12 @@ function App() {
   return (
     <div className="App">
      <h1>Wallet Connect</h1>
-   {accounts.length ? (<p>{accounts}</p>): (<button onClick={handleConnect} disabled={!signClient}>Connect</button>)}
+   {accounts.length ? 
+   (<>
+   <p>{accounts}</p>
+   <button onClick={handleDisconnect}>Disconnect</button>
+   </>): 
+   (<button onClick={handleConnect} disabled={!signClient}>Connect</button>)}
     </div>
   );
 }
